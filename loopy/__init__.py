@@ -326,6 +326,15 @@ __all__ = [
         # }}}
         ]
 
+
+try:
+    import loopy.relations as relations
+except ImportError:
+    # catching ImportErrors to avoid making minikanren a hard-dep
+    pass
+else:
+    __all__ += ["relations"]
+
 # }}}
 
 

@@ -1631,6 +1631,156 @@ def test_concatenate_arrays(ctx_factory):
     lp.auto_test_vs_ref(ref_t_unit, ctx, t_unit)
 
 
+def test_reindexing_strided_access(ctx_factory):
+    import islpy as isl
+
+    if not hasattr(isl.Set, "card"):
+        pytest.skip("No barvinok support")
+
+    ctx = ctx_factory()
+
+    tunit = lp.make_kernel(
+        "{[i, j]: 0<=j,i<10}",
+        """
+        <> tmp[2*i, 2*j] = a[i, j]
+        out[i, j] = tmp[2*i, 2*j]**2
+        """)
+
+    tunit = lp.add_dtypes(tunit, {"a": "float64"})
+    ref_tunit = tunit
+
+    knl = lp.reindex_temporary_using_seghir_loechner_scheme(tunit.default_entrypoint,
+                                                            "tmp")
+    tunit = tunit.with_kernel(knl)
+
+    tv, = tunit.default_entrypoint.temporary_variables.values()
+    assert tv.shape == (100,)
+
+    lp.auto_test_vs_ref(ref_tunit, ctx, tunit)
+
+
+def test_reindexing_figurate(ctx_factory):
+    import islpy as isl
+
+    if not hasattr(isl.Set, "card"):
+        pytest.skip("No barvinok support")
+
+    ctx = ctx_factory()
+
+    tunit = lp.make_kernel(
+        "{[i, j]: 0<=j<=i<10}",
+        """
+        <> tmp[2*i, 2*j] = a[i, j]
+        out[i, j] = tmp[2*i, 2*j]**2
+        """)
+
+    tunit = lp.add_dtypes(tunit, {"a": "float64"})
+    ref_tunit = tunit
+
+    knl = lp.reindex_temporary_using_seghir_loechner_scheme(tunit.default_entrypoint,
+                                                            "tmp")
+    tunit = tunit.with_kernel(knl)
+
+    tv, = tunit.default_entrypoint.temporary_variables.values()
+    assert tv.shape == (55,)
+
+    lp.auto_test_vs_ref(ref_tunit, ctx, tunit)
+
+
+def test_reindexing_figurate_parametric_shape(ctx_factory):
+    import islpy as isl
+    from loopy.symbolic import parse
+
+    if not hasattr(isl.Set, "card"):
+        pytest.skip("No barvinok support")
+
+    ctx = ctx_factory()
+
+    tunit = lp.make_kernel(
+        "{[i, j]: 0<=j<=i<n}",
+        """
+        <> tmp[i, j] = a[i, j]
+        out[i, j] = tmp[i, j]**2
+        """,
+        assumptions="n > 0",
+    )
+
+    tunit = lp.add_dtypes(tunit, {"a": "float64"})
+    tunit = lp.set_temporary_address_space(tunit, "tmp",
+                                           lp.AddressSpace.GLOBAL)
+    ref_tunit = tunit
+
+    knl = lp.reindex_temporary_using_seghir_loechner_scheme(tunit.default_entrypoint,
+                                                            "tmp")
+    tunit = tunit.with_kernel(knl)
+
+    tv, = tunit.default_entrypoint.temporary_variables.values()
+    assert tv.shape == (parse("(n + n**2) // 2"),)
+
+    lp.auto_test_vs_ref(ref_tunit, ctx, tunit, parameters={"n": 20})
+
+
+def test_sum_redn_algebraic_transforms(ctx_factory):
+    from pymbolic import variables
+    from loopy.symbolic import Reduction
+
+    t_unit = lp.make_kernel(
+        "{[e,i,j,x,r]: 0<=e<N_e and 0<=i,j<35 and 0<=x,r<3}",
+        """
+        y[i] = sum([r,j], J[x, r, e]*D[r,i,j]*u[e,j])
+        """,
+        [lp.GlobalArg("J,D,u", dtype=np.float64, shape=lp.auto),
+         ...],
+    )
+    knl = t_unit.default_entrypoint
+
+    knl = lp.split_reduction_inward(knl, "j")
+    knl = lp.hoist_invariant_multiplicative_terms_in_sum_reduction(
+        knl,
+        reduction_inames="j"
+    )
+    knl = lp.extract_multiplicative_terms_in_sum_reduction_as_subst(
+        knl,
+        within=None,
+        subst_name="grad_without_jacobi_subst",
+        arguments=variables("r i e"),
+        terms_filter=lambda x: isinstance(x, Reduction)
+    )
+
+    transformed_t_unit = t_unit.with_kernel(knl)
+    transformed_t_unit = lp.precompute(
+        transformed_t_unit,
+        "grad_without_jacobi_subst",
+        sweep_inames=["r", "i"],
+        precompute_outer_inames=frozenset({"e"}),
+        temporary_address_space=lp.AddressSpace.PRIVATE)
+
+    x1 = lp.get_op_map(t_unit, subgroup_size=1).eval_and_sum({"N_e": 1})
+    x2 = lp.get_op_map(transformed_t_unit, subgroup_size=1).eval_and_sum({"N_e": 1})
+
+    assert x1 == 33075
+    assert x2 == 7980  # i.e. this demonstrates a 4.14x reduction in flops
+
+
+def test_decouple_domain(ctx_factory):
+    ctx = ctx_factory()
+    t_unit = lp.make_kernel(
+        "{[i,j]: 0<=i, j<10}",
+        """
+        x[i] = i
+        y[j] = 2*j
+        """,
+        name="foo",
+    )
+    ref_t_unit = t_unit
+    t_unit = lp.decouple_domain(t_unit, {"j"}, set())
+    assert (ref_t_unit["foo"].get_home_domain_index("i")
+                == ref_t_unit["foo"].get_home_domain_index("j"))
+    assert (t_unit["foo"].get_home_domain_index("i")
+                != t_unit["foo"].get_home_domain_index("j"))
+    lp.auto_test_vs_ref(ref_t_unit, ctx, t_unit)
+
+
 def test_remove_inames_from_insn():
     t_unit = lp.make_kernel(
         "{[i, j]: 0<=i<10 and 0<=j<20}",

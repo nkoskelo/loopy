@@ -23,7 +23,7 @@ THE SOFTWARE.
 import logging
 
 from pymbolic import var
-from pytools import ImmutableRecord
+from pytools import ImmutableRecord, memoize_on_first_arg
 
 from loopy.diagnostic import LoopyError
 from loopy.kernel.function_interface import CallableKernel, ScalarCallable
@@ -508,6 +508,7 @@ def assignment_to_subst(kernel, lhs_name, extra_arguments=(), within=None,
 # {{{ expand_subst
 
 @for_each_kernel
+@memoize_on_first_arg
 def expand_subst(kernel, within=None):
     """
     Returns an instance of :class:`loopy.LoopKernel` with the substitutions

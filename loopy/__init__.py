@@ -112,6 +112,7 @@ from loopy.target.cuda import CudaTarget
 from loopy.target.execution import ExecutorBase
 from loopy.target.ispc import ISPCTarget
 from loopy.target.opencl import OpenCLTarget
+from loopy.target.pycuda import PyCudaTarget, PyCudaWithPackedArgsTarget
 from loopy.target.pyopencl import PyOpenCLTarget
 from loopy.tools import Optional, clear_in_mem_caches, memoize_on_disk, t_unit_to_python
 from loopy.transform.add_barrier import add_barrier
@@ -143,6 +144,7 @@ from loopy.transform.data import (
     tag_array_axes,
     tag_data_axes,
 )
+from loopy.transform.domain import decouple_domain
 from loopy.transform.fusion import fuse_kernels
 from loopy.transform.iname import (
     add_inames_for_unused_hw_axes,
@@ -179,6 +181,10 @@ from loopy.transform.instruction import (
     simplify_indices,
     tag_instructions,
 )
+from loopy.transform.loop_fusion import (
+    get_kennedy_unweighted_fusion_candidates,
+    rename_inames_in_batch
+)
 from loopy.transform.pack_and_unpack_args import pack_and_unpack_args_for_call
 from loopy.transform.padding import (
     add_padding,
@@ -194,6 +200,10 @@ from loopy.transform.privatize import (
     unprivatize_temporaries_with_inames,
 )
 from loopy.transform.realize_reduction import realize_reduction
+from loopy.transform.reduction import (
+    hoist_invariant_multiplicative_terms_in_sum_reduction,
+    extract_multiplicative_terms_in_sum_reduction_as_subst)
+from loopy.transform.reindex import reindex_temporary_using_seghir_loechner_scheme
 from loopy.transform.save import save_and_reload_temporaries
 from loopy.transform.subst import (
     assignment_to_subst,
@@ -264,6 +274,8 @@ __all__ = [
     "Options",
     "OrderedAtomic",
     "PreambleInfo",
+    "PyCudaTarget",
+    "PyCudaWithPackedArgsTarget",
     "PyOpenCLTarget",
     "Reduction",
     "ScalarCallable",
@@ -303,8 +315,10 @@ __all__ = [
     "clear_in_mem_caches",
     "collect_common_factors_on_increment",
     "concatenate_arrays",
+    "decouple_domain",
     "duplicate_inames",
     "expand_subst",
+    "extract_multiplicative_terms_in_sum_reduction_as_subst",
     "extract_subst",
     "find_instructions",
     "find_most_recent_global_barrier",
@@ -326,6 +340,7 @@ __all__ = [
     "get_dot_dependency_graph",
     "get_global_barrier_order",
     "get_iname_duplication_options",
+    "get_kennedy_unweighted_fusion_candidates",
     "get_mem_access_map",
     "get_one_linearized_kernel",
     "get_one_scheduled_kernel",
@@ -334,6 +349,7 @@ __all__ = [
     "get_subkernels",
     "get_synchronization_map",
     "has_schedulable_iname_nesting",
+    "hoist_invariant_multiplicative_terms_in_sum_reduction",
     "infer_arg_descr",
     "infer_unknown_types",
     "inline_callable_kernel",
@@ -363,6 +379,7 @@ __all__ = [
     "register_preamble_generators",
     "register_reduction_parser",
     "register_symbol_manglers",
+    "reindex_temporary_using_seghir_loechner_scheme",
     "remove_inames_from_insn",
     "remove_instructions",
     "remove_predicates_from_insn",
@@ -372,6 +389,7 @@ __all__ = [
     "rename_callable",
     "rename_iname",
     "rename_inames",
+    "rename_inames_in_batch",
     "replace_instruction_ids",
     "save_and_reload_temporaries",
     "set_argument_order",
@@ -399,6 +417,14 @@ __all__ = [
     "unprivatize_temporaries_with_inames",
     "untag_inames",
     ]
+
+try:
+    import loopy.relations as relations
+except ImportError:
+    # catching ImportErrors to avoid making minikanren a hard-dep
+    pass
+else:
+    __all__ += ["relations"]
 
 # }}}
 

@@ -254,8 +254,9 @@ def _preamble_generator(preamble_info, func_qualifier="inline"):
                           n =  -n;
                         }""")
 
+            # inline {res_ctype} {func.c_name}({base_ctype} x, {exp_ctype} n) {{
             yield (f"07_{func.c_name}", f"""
-            inline {res_ctype} {func.c_name}({base_ctype} x, {exp_ctype} n) {{
+            {func_qualifier} {res_ctype} {func.c_name}({base_ctype} x, {exp_ctype} n) {{
               if (n == 0)
                 return 1;
               {re.sub("^", 14*" ", signed_exponent_preamble, flags=re.M)}

@@ -27,8 +27,14 @@ THE SOFTWARE.
 import re
 from functools import cached_property, reduce
 from sys import intern
-from typing import AbstractSet, ClassVar, Mapping, Sequence, Tuple
-
+from typing import (
+    AbstractSet,
+    ClassVar,
+    Mapping,
+    Sequence,
+    Tuple,
+    Union
+)
 import immutables
 import numpy as np
 
@@ -2809,5 +2815,30 @@ def is_tuple_of_expressions_equal(a, b):
         for ai, bi in zip(a, b))
 
 # }}}
+
+
+def _is_isl_set_universe(isl_set: Union[isl.BasicSet, isl.Set]):
+    if isinstance(isl_set, isl.BasicSet):
+        return isl_set.is_universe()
+    else:
+        assert isinstance(isl_set, isl.Set)
+        return isl_set.complement().is_empty()
+
+
+def pw_qpolynomial_to_expr(pw_qpoly: isl.PwQPolynomial
+                           ) -> ExpressionT:
+    from pymbolic.primitives import If
+
+    result = 0
+
+    for bset, qpoly in reversed(pw_qpoly.get_pieces()):
+        if _is_isl_set_universe(bset):
+            result = qpolynomial_to_expr(qpoly)
+        else:
+            result = If(set_to_cond_expr(bset),
+                        qpolynomial_to_expr(qpoly),
+                        result)
+
+    return result
 
 # vim: foldmethod=marker

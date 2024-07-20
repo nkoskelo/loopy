@@ -937,7 +937,7 @@ class CallInstruction(MultiAssignmentBase):
 
         A tuple of `:class:loopy.Optional`. If an entry is not empty, it
         contains the type that will be assigned to the new temporary variable
-        created from the assigment.
+        created from the assignment.
 
     .. automethod:: __init__
     """
@@ -1102,7 +1102,7 @@ def is_array_call(assignees, expression):
     Returns *True* is the instruction is an array call.
 
     An array call is a function call applied to array type objects. If any of
-    the arguemnts or assignees to the function is an array,
+    the arguments or assignees to the function is an array,
     :meth:`is_array_call` will return *True*.
     """
     from pymbolic.primitives import Call, Subscript
@@ -1463,7 +1463,7 @@ class BarrierInstruction(_DataObliviousInstruction):
     .. attribute:: mem_kind
 
         A string, ``"global"`` or ``"local"``. Chooses which memory type to
-        sychronize, for targets that require this (e.g. OpenCL)
+        synchronize, for targets that require this (e.g. OpenCL)
 
     The textual syntax in a :mod:`loopy` kernel is::
 

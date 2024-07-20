@@ -643,7 +643,7 @@ class OpenCLCASTBuilder(CFamilyASTBuilder):
         from loopy.target.c import FunctionDeclarationWrapper
         assert isinstance(fdecl, FunctionDeclarationWrapper)
         if not codegen_state.is_entrypoint:
-            # auxiliary kernels need not mention opencl speicific qualifiers
+            # auxiliary kernels need not mention opencl specific qualifiers
             # for a functions signature
             return preambles, fdecl
 
@@ -909,7 +909,7 @@ class OpenCLCASTBuilder(CFamilyASTBuilder):
 # }}}
 
 
-# {{{ volatile mem acccess target
+# {{{ volatile mem access target
 
 class VolatileMemExpressionToOpenCLCExpressionMapper(
         ExpressionToOpenCLCExpressionMapper):

@@ -1073,7 +1073,8 @@ class V2SchedulerNotImplementedException(RuntimeError):
 
 
 def generate_loop_schedules_v2(kernel):
-    from loopy.schedule.tools import get_loop_nest_tree
+    # from loopy.schedule.tools import get_loop_nest_tree
+    from loopy.schedule.tools import get_loop_tree
     from functools import reduce
     from pytools.graph import compute_topological_order
     from loopy.kernel.data import ConcurrentTag, IlpBaseTag, VectorizeTag
@@ -1108,7 +1109,8 @@ def generate_loop_schedules_v2(kernel):
 
     # }}}
 
-    loop_nest_tree = get_loop_nest_tree(kernel)
+    # loop_nest_tree = get_loop_nest_tree(kernel)
+    loop_nest_tree = get_loop_tree(kernel)
 
     # loop_inames: inames that are realized as loops. Concurrent inames aren't
     # realized as a loop in the generated code for a loopy.TargetBase.

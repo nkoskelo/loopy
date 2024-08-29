@@ -2404,7 +2404,7 @@ def _generate_loop_schedules_inner(
 
     from loopy.schedule.tools import V2SchedulerNotImplementedError
     try:
-        gen_sched = _generate_loop_schedules_v2(kernel)
+        gen_sched = generate_loop_schedules_v2(kernel)
         yield _postprocess_schedule(kernel, callables_table, gen_sched)
         return
 

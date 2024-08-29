@@ -181,16 +181,26 @@ class IdentityMapperMixin:
 
         return type(expr)(expr.type, new_child)
 
+    def map_type_cast(self, expr, *args, **kwargs):
+        return self.rec(expr.child, *args, **kwargs)
+
     def map_sub_array_ref(self, expr, *args, **kwargs):
-        new_inames = self.rec(expr.swept_inames, *args, **kwargs)
-        new_subscript = self.rec(expr.subscript, *args, **kwargs)
+        return self.combine((
+            self.rec(expr.subscript, *args, **kwargs),
+            self.combine(tuple(
+                         self.rec(idx, *args, **kwargs)
+                         for idx in expr.swept_inames))))
 
-        if (all(new_iname is old_iname
-                for new_iname, old_iname in zip(new_inames, expr.swept_inames))
-                and new_subscript is expr.subscript):
-            return expr
-
-        return SubArrayRef(new_inames, new_subscript)
+    # def map_sub_array_ref(self, expr, *args, **kwargs):
+    #    new_inames = self.rec(expr.swept_inames, *args, **kwargs)
+    #    new_subscript = self.rec(expr.subscript, *args, **kwargs)
+    #
+    #    if (all(new_iname is old_iname
+    #            for new_iname, old_iname in zip(new_inames, expr.swept_inames))
+    #            and new_subscript is expr.subscript):
+    #        return expr
+    #
+    #    return SubArrayRef(new_inames, new_subscript)
 
     def map_resolved_function(self, expr, *args, **kwargs):
         # leaf, doesn't change

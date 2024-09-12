@@ -975,6 +975,14 @@ def memoize_on_disk(func, key_builder_t=LoopyKeyBuilder):
 # }}}
 
 
+def is_hashable(o: object) -> bool:
+    try:
+        hash(o)
+    except TypeError:
+        return False
+    return True
+
+
 # {{{ tree data structure
 
 T = TypeVar("T")
@@ -1197,4 +1205,4 @@ class Tree(Generic[T]):
 
 # }}}
 
- # vim: fdm=marker
+# vim: fdm=marker

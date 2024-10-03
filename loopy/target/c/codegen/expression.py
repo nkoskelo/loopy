@@ -123,7 +123,7 @@ class ExpressionToCExpressionMapper(IdentityMapper):
 
         return s
 
-    def rec(self, expr, type_context=None, needed_type: Optional[LoopyType] = None):
+    def rec(self, expr, type_context=None, needed_type: Optional[LoopyType] = None):  # type: ignore[override]
         result = RecursiveMapper.rec(self, expr, type_context)
 
         if needed_type is None:

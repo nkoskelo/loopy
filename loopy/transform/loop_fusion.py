@@ -753,30 +753,27 @@ def get_kennedy_unweighted_fusion_candidates(
     # {{{ sanitary checks
 
     _nest_tree_id_to_candidate = {}
-    _inames_to_remove = set()
+    _fusable_candidates = set()
 
     for iname in candidates:
         loop_nest_tree_node_id = iname_to_tree_node_id[iname]
         if loop_nest_tree_node_id not in _nest_tree_id_to_candidate:
             _nest_tree_id_to_candidate[loop_nest_tree_node_id] = iname
-            print(f"adding {iname=} as {loop_nest_tree_node_id=}")
+            _fusable_candidates.add(iname)
         else:
-            _inames_to_remove.add(iname)
             conflict_iname = _nest_tree_id_to_candidate[loop_nest_tree_node_id]
-            print(f"Conflict: {loop_nest_tree_node_id=}")
-            # raise LoopyError(f"'{iname}' and '{conflict_iname}' "
-            #                 "cannot fused be fused as they can be nested "
-            #                 "within one another.")
+            from warnings import warn
+            warn(f"'{iname}' and '{conflict_iname}' "
+                 "cannot be fused as they can be nested within one another.")
 
-    for iname in candidates:
-        if iname not in _inames_to_remove:
-            outer_loops = reduce(frozenset.union,
-                                 tree.ancestors(iname_to_tree_node_id[iname]),
-                                 frozenset())
-            if outer_loops & candidates:
-                raise LoopyError(f"Cannot fuse '{iname}' with"
-                                 f" '{outer_loops & candidates}' as they"
-                                 " maybe nesting within one another.")
+    for iname in _fusable_candidates:
+        outer_loops = reduce(frozenset.union,
+                             tree.ancestors(iname_to_tree_node_id[iname]),
+                             frozenset())
+        if outer_loops & _fusable_candidates:
+            raise LoopyError(f"Cannot fuse '{iname}' with"
+                             f" '{outer_loops & _fusable_candidates}' as they"
+                             " maybe nesting within one another.")
 
     del _nest_tree_id_to_candidate
 
@@ -787,9 +784,8 @@ def get_kennedy_unweighted_fusion_candidates(
     just_outer_loop_nest = {tree.parent(iname_to_tree_node_id[iname]): set()
                             for iname in candidates}
 
-    for iname in candidates:
-        if iname not in _inames_to_remove:
-            just_outer_loop_nest[tree.parent(iname_to_tree_node_id[iname])].add(iname)
+    for iname in _fusable_candidates:
+        just_outer_loop_nest[tree.parent(iname_to_tree_node_id[iname])].add(iname)
 
     for outer_inames, inames in just_outer_loop_nest.items():
         fused_chunks.update(_fuse_sequential_loops_with_outer_loops(kernel,

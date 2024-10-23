@@ -30,6 +30,7 @@ from loopy.codegen.control import build_loop_nest
 from loopy.codegen.result import merge_codegen_results
 from loopy.diagnostic import LoopyError, warn
 from loopy.kernel import LoopKernel
+from loopy.symbolic import flatten
 
 
 # {{{ conditional-reducing slab decomposition
@@ -311,7 +312,7 @@ def set_up_hw_parallel_loops(codegen_state, schedule_index, next_func,
     codegen_state = codegen_state.intersect(slab)
 
     from loopy.symbolic import pw_aff_to_expr
-    hw_axis_expr = hw_axis_expr + pw_aff_to_expr(lower_bound)
+    hw_axis_expr = flatten(hw_axis_expr + pw_aff_to_expr(lower_bound))
 
     # }}}
 

@@ -219,7 +219,9 @@ class IdentityMapperMixin:
 
 
 class FlattenMapper(FlattenMapperBase, IdentityMapperMixin):
-    pass
+    # FIXME: Lies! This needs to be made precise.
+    def is_expr_integer_valued(self, expr: ExpressionT) -> bool:
+        return True
 
 
 ArithmeticOrExpressionT = TypeVar(

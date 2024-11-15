@@ -215,7 +215,7 @@ from loopy.transform.subst import (
 )
 from loopy.translation_unit import TranslationUnit, for_each_kernel, make_program
 from loopy.type_inference import infer_unknown_types
-from loopy.types import to_loopy_type
+from loopy.types import LoopyType, NumpyType, ToLoopyTypeConvertible, to_loopy_type
 from loopy.typing import auto
 from loopy.version import MOST_RECENT_LANGUAGE_VERSION, VERSION
 
@@ -258,12 +258,14 @@ __all__ = [
     "LinearSubscript",
     "LoopKernel",
     "LoopyError",
+    "LoopyType",
     "LoopyWarning",
     "MemAccess",
     "MemoryOrdering",
     "MemoryScope",
     "MultiAssignmentBase",
     "NoOpInstruction",
+    "NumpyType",
     "Op",
     "OpenCLTarget",
     "Optional",
@@ -282,6 +284,7 @@ __all__ = [
     "TemporaryVariable",
     "ToCountMap",
     "ToCountPolynomialMap",
+    "ToLoopyTypeConvertible",
     "TranslationUnit",
     "TypeCast",
     "UniqueName",

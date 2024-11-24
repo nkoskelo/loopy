@@ -231,10 +231,14 @@ class FlattenMapper(FlattenMapperBase, IdentityMapperMixin):
         return True
 
 
+#ArithmeticOrExpressionT = TypeVar(
+#                "ArithmeticOrExpressionT",
+#                ArithmeticExpressionT,
+#                ExpressionT)
 ArithmeticOrExpressionT = TypeVar(
                 "ArithmeticOrExpressionT",
-                ArithmeticExpressionT,
-                ExpressionT)
+                ArithmeticExpression,
+                Expression)
 
 
 def flatten(expr: ArithmeticOrExpressionT) -> ArithmeticOrExpressionT:

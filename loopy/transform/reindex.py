@@ -29,7 +29,8 @@ THE SOFTWARE.
 
 import islpy as isl
 from typing import Union, Iterable, Tuple
-from loopy.typing import ExpressionT
+# from loopy.typing import ExpressionT
+from loopy.typing import Expression
 from loopy.kernel import LoopKernel
 from loopy.diagnostic import LoopyError
 from loopy.symbolic import CombineMapper
@@ -236,7 +237,8 @@ def reindex_temporary_using_seghir_loechner_scheme(kernel: LoopKernel,
         subst_kernel,
         frozenset([var_name]))
 
-    access_exprs: Tuple[ExpressionT, ...]
+    # access_exprs: Tuple[ExpressionT, ...]
+    access_exprs: Tuple[Expression, ...]
 
     for insn in subst_kernel.instructions:
         if var_name in insn.dependency_names():

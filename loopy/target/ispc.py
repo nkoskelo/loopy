@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 from typing import Sequence, Tuple, cast
 
-import numpy as np  # noqa
+import numpy as np
 
 import pymbolic.primitives as p
 from cgen import Collection, Const, Declarator, Generable
@@ -237,7 +237,7 @@ class ISPCASTBuilder(CFamilyASTBuilder):
                         for arg_name in passed_names]
 
         if codegen_state.is_generating_device_code:
-            result = ISPCTask(
+            result: Declarator = ISPCTask(
                         FunctionDeclaration(
                             Value("void", name),
                             arg_decls))
@@ -323,7 +323,7 @@ class ISPCASTBuilder(CFamilyASTBuilder):
             self, arg: ArrayArg, is_written: bool) -> Declarator:
         # FIXME restrict?
         from cgen.ispc import ISPCUniform, ISPCUniformPointer
-        decl = ISPCUniform(
+        decl: Declarator = ISPCUniform(
                 ISPCUniformPointer(self.get_array_base_declarator(arg)))
 
         if not is_written:
@@ -499,7 +499,7 @@ class ISPCASTBuilder(CFamilyASTBuilder):
                 inner)
 
         if hints:
-            return Collection(list(hints) + [loop])
+            return Collection([*list(hints), loop])
         else:
             return loop
 

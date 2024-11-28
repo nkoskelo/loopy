@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from loopy.kernel.function_interface import InKernelCallable
+from loopy.translation_unit import FunctionIdT
 from loopy.typing import not_none
 
 
@@ -1020,7 +1022,7 @@ def _generate_loop_schedules_v2(kernel: LoopKernel) -> Sequence[ScheduleItem]:
     def iname_key(iname: str) -> str:
         all_ancestors = sorted(loop_tree.ancestors(iname),
                                key=lambda x: loop_tree.depth(x))
-        return ",".join(all_ancestors+[iname])
+        return ",".join([*all_ancestors, iname])
 
     def key(x: ScheduleItem) -> tuple[str, ...]:
         if isinstance(x, RunInstruction):
@@ -1254,7 +1256,7 @@ def generate_loop_schedules_internal(sched_state, debug=None):
         assert sched_state.within_subkernel is False
         yield from generate_loop_schedules_internal(
                 sched_state.copy(
-                    schedule=sched_state.schedule + (next_preschedule_item,),
+                    schedule=(*sched_state.schedule, next_preschedule_item),
                     preschedule=sched_state.preschedule[1:],
                     within_subkernel=True,
                     may_schedule_global_barriers=False,
@@ -1267,7 +1269,7 @@ def generate_loop_schedules_internal(sched_state, debug=None):
         if sched_state.active_inames == sched_state.enclosing_subkernel_inames:
             yield from generate_loop_schedules_internal(
                     sched_state.copy(
-                        schedule=sched_state.schedule + (next_preschedule_item,),
+                        schedule=(*sched_state.schedule, next_preschedule_item),
                         preschedule=sched_state.preschedule[1:],
                         within_subkernel=False,
                         may_schedule_global_barriers=True),
@@ -1286,7 +1288,7 @@ def generate_loop_schedules_internal(sched_state, debug=None):
             and next_preschedule_item.originating_insn_id is None):
         yield from generate_loop_schedules_internal(
                     sched_state.copy(
-                        schedule=sched_state.schedule + (next_preschedule_item,),
+                        schedule=(*sched_state.schedule, next_preschedule_item),
                         preschedule=sched_state.preschedule[1:]),
                     debug=debug)
 
@@ -1446,7 +1448,7 @@ def generate_loop_schedules_internal(sched_state, debug=None):
                     unscheduled_insn_ids=sched_state.unscheduled_insn_ids - iid_set,
                     insn_ids_to_try=new_insn_ids_to_try,
                     schedule=(
-                        sched_state.schedule + (RunInstruction(insn_id=insn.id),)),
+                        (*sched_state.schedule, RunInstruction(insn_id=insn.id))),
                     preschedule=(
                         sched_state.preschedule
                         if insn_id not in sched_state.prescheduled_insn_ids
@@ -1560,8 +1562,8 @@ def generate_loop_schedules_internal(sched_state, debug=None):
                 for sub_sched in generate_loop_schedules_internal(
                         sched_state.copy(
                             schedule=(
-                                sched_state.schedule
-                                + (LeaveLoop(iname=last_entered_loop),)),
+                                (*sched_state.schedule,
+                                    LeaveLoop(iname=last_entered_loop))),
                             active_inames=sched_state.active_inames[:-1],
                             insn_ids_to_try=insn_ids_to_try,
                             preschedule=(
@@ -1770,10 +1772,9 @@ def generate_loop_schedules_internal(sched_state, debug=None):
                     for sub_sched in generate_loop_schedules_internal(
                             sched_state.copy(
                                 schedule=(
-                                    sched_state.schedule
-                                    + (EnterLoop(iname=iname),)),
+                                    (*sched_state.schedule, EnterLoop(iname=iname))),
                                 active_inames=(
-                                    sched_state.active_inames + (iname,)),
+                                    (*sched_state.active_inames, iname)),
                                 entered_inames=(
                                     sched_state.entered_inames
                                     | frozenset((iname,))),
@@ -2603,7 +2604,7 @@ def get_one_linearized_kernel(
                         callables_table)
 
     if CACHING_ENABLED and not from_cache:
-        schedule_cache.store_if_not_present(sched_cache_key, result)  # pylint: disable=possibly-used-before-assignment  # noqa: E501
+        schedule_cache.store_if_not_present(sched_cache_key, result)  # pylint: disable=possibly-used-before-assignment
 
     return result
 
@@ -2623,7 +2624,7 @@ def linearize(t_unit: TranslationUnit) -> TranslationUnit:
 
     pre_schedule_checks(t_unit)
 
-    new_callables = {}
+    new_callables: dict[FunctionIdT, InKernelCallable] = {}
 
     for name, clbl in t_unit.callables_table.items():
         if isinstance(clbl, CallableKernel):
